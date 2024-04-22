@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capture image through webcam for emotion detection</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        #background-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+        }
+
+        #container {
+            position: relative;
+            text-align: center;
+            color: white;
+            z-index: 1;
+        }
+
+        video#video {
+            width: 320px;
+            height: 240px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        #emotion {
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 10px;
+            background-color: DodgerBlue;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #sample-link {
+            margin-top: 10px;
+            display: block;
+            color: white;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <img id="background" src="https://cdn.pixabay.com/photo/2019/10/04/13/05/beautiful-morning-view-4525590_1280.jpg" alt="background image">
+    <video id="background-video" autoplay loop muted>
+        <source src="mm.mp4" type="video/mp4">
+    </video>
+    
+    <div id="container">
+        <h1>Emotion Detection</h1>
+        <video id="video" autoplay></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+        <div id="emotion"></div>
+        <button id="captureButton">Capture Image</button>
+        <!-- Text link to search for songs on YouTube -->
+        <a id="youtubeLink" href="#" target="_blank" style="display: none;">Find Healing Songs on YouTube</a>
+        <a id="musicPlayerLink" href="#" target="_blank" style="display: none;">Music Therapy Player</a>
+
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const emotionDiv = document.getElementById('emotion');
+        const captureButton = document.getElementById('captureButton');
+        let stream = null;
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((streamObj) => {
+                stream = streamObj;
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error('Error accessing the webcam:', err);
+            });
+
+        captureButton.addEventListener('click', () => {
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+            fetch('/capture', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image_data: imageData })
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log('Emotion detected:', data.emotion);
+                emotionDiv.textContent = `Detected Emotion: ${data.emotion}`;
+                // Display the YouTube link
+                const youtubeLink = document.getElementById('youtubeLink');
+                youtubeLink.href = data.youtube_link;
+                youtubeLink.textContent = 'Find Healing Songs on YouTube';
+                youtubeLink.style.display = 'block'; // Show the link
+
+                // Display the Music Player link
+                const musicPlayerLink = document.getElementById('musicPlayerLink');
+                musicPlayerLink.href = `/music_player/${data.emotion}`;
+                musicPlayerLink.textContent = 'Music Therapy Player';
+                musicPlayerLink.style.display = 'block';
+
+                stopCamera(); // Stop the camera access after capturing the image
+            })
+            .catch((error) => {
+                console.error('Error capturing image:', error);
+            });
+        });
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                video.srcObject = null;
+            }
+        }
+    </script>
+</body>
+</html>

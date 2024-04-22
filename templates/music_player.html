@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Music Therapy Player</title>
+</head>
+<body>
+    <h1>Music Therapy Player</h1>
+    <audio id="audioPlayer" controls style="width: 100%;">
+        Your browser does not support the audio element.
+    </audio>
+    <ul>
+        {% for song in songs %}
+            <li>
+                <a href="#" onclick="playSong('{{ emotion }}', '{{ song }}')">{{ song }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        function playSong(emotion, songName) {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const songUrl = `/music_list/song/${emotion}/${songName}`;
+            
+            audioPlayer.src = songUrl;
+            audioPlayer.play();
+        }
+    </script>
+</body>
+</html>
